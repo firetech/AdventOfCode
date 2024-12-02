@@ -20,9 +20,7 @@ safe_reports_damp = @levels.count do |report|
   safe = is_safe(report)
   if not safe
     report.each_index do |i|
-      new_report = report.clone
-      new_report.delete_at(i)
-      safe = is_safe(new_report)
+      safe = is_safe(report[0...i] + report[(i+1)..-1])
       break if safe
     end
   end
