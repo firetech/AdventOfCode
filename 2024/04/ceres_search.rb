@@ -3,83 +3,48 @@ require_relative '../../lib/aoc'
 file = ARGV[0] || AOC.input_file()
 #file = 'example1'
 
-@grid = File.read(file).rstrip.split("\n")
+def key(x, y)
+  return y << 8 | x
+end
+
+@xs = [] # Part 1
+@as = [] # Part 2
+@map = {}
+File.read(file).rstrip.split("\n").each_with_index do |line, y|
+  line.each_char.with_index do |c, x|
+    @map[key(x, y)] = c
+    @xs << [x, y] if c == 'X'
+    @as << [x, y] if c == 'A'
+  end
+end
 
 # Part 1
 xmas_count = 0
-@grid.each_with_index do |line, y|
-  x = -1
-  until (x = line.index('X', x + 1)).nil?
-    # Horizontal
-    if @grid[y][x+1] == 'M' and
-        @grid[y][x+2] == 'A' and
-        @grid[y][x+3] == 'S'
-      xmas_count += 1
-    end
-    # Backwards
-    if x >= 3 and
-        @grid[y][x-1] == 'M' and
-        @grid[y][x-2] == 'A' and
-        @grid[y][x-3] == 'S'
-      xmas_count += 1
-    end
-    # Down
-    if @grid[y+1] and @grid[y+1][x] == 'M' and
-        @grid[y+2] and @grid[y+2][x] == 'A' and
-        @grid[y+3] and @grid[y+3][x] == 'S'
-      xmas_count += 1
-    end
-    # Up
-    if y >= 3 and
-        @grid[y-1][x] == 'M' and
-        @grid[y-2][x] == 'A' and
-        @grid[y-3][x] == 'S'
-      xmas_count += 1
-    end
-    # Up Left
-    if x >= 3 and y >= 3 and
-        @grid[y-1][x-1] == 'M' and
-        @grid[y-2][x-2] == 'A' and
-        @grid[y-3][x-3] == 'S'
-      xmas_count += 1
-    end
-    # Up Right
-    if y >= 3 and
-        @grid[y-1][x+1] == 'M' and
-        @grid[y-2][x+2] == 'A' and
-        @grid[y-3][x+3] == 'S'
-      xmas_count += 1
-    end
-    # Down Left
-    if x >= 3 and
-        @grid[y+1] and @grid[y+1][x-1] == 'M' and
-        @grid[y+2] and @grid[y+2][x-2] == 'A' and
-        @grid[y+3] and @grid[y+3][x-3] == 'S'
-      xmas_count += 1
-    end
-    # Down Right
-    if @grid[y+1] and @grid[y+1][x+1] == 'M' and
-        @grid[y+2] and @grid[y+2][x+2] == 'A' and
-        @grid[y+3] and @grid[y+3][x+3] == 'S'
-      xmas_count += 1
-    end
+@xs.each do |x, y|
+  checks = Array.new(8, true)
+  %w(M A S).each_with_index do |c, i|
+    o = i + 1
+    checks[0] = (c == @map[key(x+o, y  )]) if checks[0] # Right
+    checks[1] = (c == @map[key(x+o, y-o)]) if checks[1] # Up Right
+    checks[2] = (c == @map[key(x  , y-o)]) if checks[2] # Up
+    checks[3] = (c == @map[key(x-o, y-o)]) if checks[3] # Up Left
+    checks[4] = (c == @map[key(x-o, y  )]) if checks[4] # Left
+    checks[5] = (c == @map[key(x-o, y+o)]) if checks[5] # Down Left
+    checks[6] = (c == @map[key(x  , y+o)]) if checks[6] # Down
+    checks[7] = (c == @map[key(x+o, y+o)]) if checks[7] # Down Right
   end
+  xmas_count += checks.count(true)
 end
 
 puts "XMAS appearances: #{xmas_count}"
 
 # Part 2
-MS = ['MS', 'SM']
+MS = %w(MS SM)
 mas_count = 0
-@grid.each_with_index do |line, y|
-  next if y < 1 or @grid[y+1].nil?
-  x = -1
-  until (x = line.index('A', x + 1)).nil?
-    next if x < 1
-    if MS.include?([@grid[y-1][x-1], @grid[y+1][x+1]].join) and
-        MS.include?([@grid[y+1][x-1], @grid[y-1][x+1]].join)
-      mas_count += 1
-    end
+@as.each do |x, y|
+  if MS.include?([@map[key(x-1, y-1)], @map[key(x+1, y+1)]].join) and
+      MS.include?([@map[key(x+1, y-1)], @map[key(x-1, y+1)]].join)
+    mas_count += 1
   end
 end
 
