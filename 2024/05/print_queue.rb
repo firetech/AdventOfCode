@@ -30,7 +30,7 @@ end
   printed = Set[]
   correct = true
   update.each do |page|
-    if @rules.has_key?(page) and not (printed & @rules[page]).empty?
+    if printed.intersect?(@rules[page] || [])
       correct = false
       break
     end
