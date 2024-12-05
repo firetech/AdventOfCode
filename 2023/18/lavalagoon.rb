@@ -45,16 +45,16 @@ def fill(instructions)
   raise 'Not a loop' if vertices.last != vertices.first
   # Area of irregular polygon:
   #   |x1y2 - y1x2 + x2y3 - y2x3 + ... + xny1 - ynx1| / 2
-  # Perimeter is just pythagoras.
+  # Perimeter is just pythagoras, but since all of our lines are horizontal or
+  # vertical, we can simplify it.
   count = vertices.length
   area = 0
   perimeter = 0
-  vertices.each_with_index do |(x1, y1), i|
-    x2, y2 = vertices[(i + 1) % count]
+  vertices.each_cons(2) do |(x1, y1), (x2, y2)|
     area += x1*y2 - x2*y1
-    perimeter += Math.sqrt((x2-x1)**2 + (y2-y1)**2)
+    perimeter += ((x2-x1) + (y2-y1)).abs
   end
-  return (area.abs / 2.0 + perimeter / 2.0 + 1).round
+  return (area.abs / 2 + perimeter / 2 + 1)
 end
 
 # Part 1
