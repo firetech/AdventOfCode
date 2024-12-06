@@ -1,5 +1,5 @@
-require 'set'
 require_relative '../../lib/aoc'
+require_relative '../../lib/multicore'
 
 file = ARGV[0] || AOC.input_file()
 #file = 'example1'
@@ -28,14 +28,18 @@ DIR_TO_DXDY = [
   [-1, 0]
 ]
 
-def walk(obstruct_x = nil, obstruct_y = nil)
+def to_pos(x, y)
+  return x << 8 | y
+end
+
+def walk(obstruct = nil)
   dir = 0
   x, y = @start
   visited = {}
   inside = true
   while inside
-    pos = [x, y]
-    visited[pos] ||= Set[]
+    pos = to_pos(x, y)
+    visited[pos] ||= []
     return nil if visited[pos].include?(dir)
     visited[pos] << dir
 
@@ -55,7 +59,7 @@ def walk(obstruct_x = nil, obstruct_y = nil)
         break
       end
       if @map[new_y][new_x] == '#' or
-          (new_x == obstruct_x and new_y == obstruct_y)
+          (not obstruct.nil? and to_pos(new_x, new_y) == obstruct)
         turning = true
         dir = (dir + 1) % DIR_TO_DXDY.length
       end
@@ -72,9 +76,22 @@ puts "#{@visited.count} visited positions"
 
 # Part 2
 obstructions = 0
-@visited.each_key do |x, y|
-  if walk(x, y).nil?
-    obstructions += 1
+stop = nil
+begin
+  input, output, stop = Multicore.run do |worker_in, worker_out|
+    until (pos = worker_in[]).nil?
+      worker_out[walk(pos).nil?]
+    end
   end
+  @visited.each_key do |pos|
+    input << pos
+  end
+  @visited.count.times do
+    if output.pop
+      obstructions += 1
+    end
+  end
+ensure
+  stop[]
 end
 puts "#{obstructions} possible obstructions cause a loop"
