@@ -63,7 +63,11 @@ module Multicore
                 worker_output[IPC_ERR]
                 worker_output[e]
               ensure
-                worker_output[IPC_EXIT]
+                begin
+                  worker_output[IPC_EXIT]
+                rescue Errno::EPIPE
+                  # Ignore
+                end
                 write_from_fork.close
                 read_to_fork.close
                 exit!(0)
