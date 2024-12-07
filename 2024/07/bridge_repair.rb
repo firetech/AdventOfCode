@@ -32,7 +32,8 @@ def is_possible(result, operands, allow_join = false)
 
     operators.each do |op|
       if op == :join
-        new_value = "#{value}#{this_operand}".to_i
+        shift = 10**(Math.log10(this_operand).floor + 1)
+        new_value = value * shift + this_operand
       else
         new_value = value.send(op, this_operand)
       end
