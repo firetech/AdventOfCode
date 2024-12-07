@@ -1,4 +1,5 @@
 require_relative '../../lib/aoc'
+require_relative '../../lib/multicore'
 
 file = ARGV[0] || AOC.input_file()
 #file = 'example1'
@@ -16,13 +17,14 @@ File.read(file).rstrip.split("\n").each do |line|
   end
 end
 
-PART1_OPERATORS = [:+, :*]
-PART2_OPERATORS = [:+, :*, :join]
+OPERATORS = [:+, :*] # Part 1
+JOIN_OPERATORS = OPERATORS + [:join] # Part 2
 
-def is_possible(result, operands, operators)
+def is_possible(result, operands, allow_join = false)
   # DFS into the decision tree
   first_operand, *rest_operands = operands
   stack = [[first_operand, rest_operands]]
+  operators = allow_join ? JOIN_OPERATORS : OPERATORS
   until stack.empty?
     value, operands_left = stack.pop
 
@@ -50,20 +52,31 @@ def is_possible(result, operands, operators)
   return false
 end
 
-# Part 1
-true_sum = 0
-@equations.each do |result, operands|
-  if is_possible(result, operands, PART1_OPERATORS)
-    true_sum += result
+true_sum = 0 # Part 1
+true_sum_concat = 0 # Part 2
+stop = nil
+begin
+  input, output, stop = Multicore.run do |worker_in, worker_out|
+    until (result, operands = worker_in[]).nil?
+      results = [0, 0]
+      if is_possible(result, operands)
+        results[0] = results[1] = result
+      elsif is_possible(result, operands, true)
+        results[1] = result
+      end
+      worker_out[results]
+    end
   end
-end
-puts "Total calibration result: #{true_sum}"
-
-# Part 2
-true_sum_concat = 0
-@equations.each do |result, operands|
-  if is_possible(result, operands, PART2_OPERATORS)
-    true_sum_concat += result
+  @equations.each do |result, operands|
+    input << [result, operands]
   end
+  @equations.count.times do
+    results = output.pop
+    true_sum += results[0]
+    true_sum_concat += results[1]
+  end
+ensure
+  stop[]
 end
-puts "Total calibration result with concatenation: #{true_sum_concat}"
+puts "Total calibration result: #{true_sum}" # Part 1
+puts "Total calibration result with concatenation: #{true_sum_concat}" # Part 2
