@@ -32,8 +32,10 @@ end
 puts "Number of first antinodes: #{@antinodes1.count}"
 
 # Part 2
-@antinodes2 = Set.new(@nodes.values.flatten(1))
+@antinodes2 = Set[]
 @nodes.each do |freq, freq_nodes|
+  next if freq_nodes.size < 2
+  @antinodes2.merge(freq_nodes)
   freq_nodes.permutation(2) do |(x_near, y_near), (x_far, y_far)|
     dx = x_far - x_near
     antinode_x = x_near - dx
