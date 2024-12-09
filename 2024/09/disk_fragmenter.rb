@@ -7,13 +7,13 @@ file = ARGV[0] || AOC.input_file()
 
 @disk = [] # Part 1
 @blocks = {} # Part 2
-@spaces = {} # Part 2
+@spaces = [] # Part 2
 id = 0
 @map.each_slice(2) do |file, free|
   @blocks[id] = [@disk.length, file]
   @disk.push(*([id] * file))
   if not free.nil? and free > 0
-    @spaces[@disk.length] = free
+    @spaces << [@disk.length, free]
     @disk.push(*([nil] * free))
   end
   id += 1
@@ -32,21 +32,24 @@ checksum1 = 0
 puts "Checksum after compaction: #{checksum1}"
 
 # Part 2
-@blocks.reverse_each do |id, (block_start, length)|
+@blocks.reverse_each do |id, (block_start, block_length)|
   space = nil
-  @spaces.keys.sort.each do |start|
-    break if start >= block_start
-    if @spaces[start] >= length
-      space = start
+  @spaces.each_with_index do |(space_start, space_length), i|
+    break if space_start >= block_start
+    if space_length >= block_length
+      space = i
       break
     end
   end
 
   unless space.nil?
-    @blocks[id][0] = space
-    size = @spaces.delete(space)
-    if size > length
-      @spaces[space + length] = size - length
+    space_start, space_length = @spaces[space]
+    @blocks[id][0] = space_start
+    if block_length == space_length
+      @spaces.delete_at(space)
+    else
+      @spaces[space][0] += block_length
+      @spaces[space][1] -= block_length
     end
   end
 end
