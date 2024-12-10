@@ -16,7 +16,7 @@ end
 @heads = []
 @map = {}
 File.read(file).rstrip.split("\n").each_with_index do |line, y|
-  line.chars.each_with_index do |val, x|
+  line.each_char.with_index do |val, x|
     val_i = val.to_i
     pos = to_pos(x, y)
     @map[pos] = val_i
