@@ -27,15 +27,17 @@ map.each_with_index do |line, y|
   end
 end
 
-DIRS = [
+POS_DIRS = [
   [ 1,  0],
-  [ 0,  1],
+  [ 0,  1]
+]
+ALL_DIRS = POS_DIRS + [
   [-1,  0],
   [ 0, -1]
 ]
 
 # BFS/Flood Fill to find areas.
-queue = [@field.keys.first]
+queue = [to_pos(0, 0)]
 visited = Set[queue.first]
 @areas = {}
 @pos2area = {}
@@ -48,27 +50,26 @@ until queue.empty?
   if area.nil?
     area = @pos2area[pos] = next_area
     next_area += 1
-    (@areas[area] ||= Set[]) << pos
+    @areas[area] = Set[pos]
   end
 
   x, y = from_pos(pos)
-  DIRS.each do |dx, dy|
+  POS_DIRS.each do |dx, dy|
     npos = to_pos(x+dx, y+dy)
     nplant = @field[npos]
     next if nplant.nil?
     if nplant == plant
+      # Adjacent plant is in same area as current plant
       narea = @pos2area[npos]
-      # Adjacent plant belongs to same area as current plant
       if narea.nil?
         @pos2area[npos] = area
+        @areas[area] << npos
       elsif narea != area
         # Merge areas
-        target, other = [area, narea].sort
-        @areas[other].each { |apos| @pos2area[apos] = target }
-        @areas[target] += @areas.delete(other)
-        area = target
+        @areas[area].each { |apos| @pos2area[apos] = narea }
+        @areas[narea].merge(@areas.delete(area))
+        area = narea
       end
-      (@areas[area] ||= Set[]) << npos
     end
     next unless visited.add?(npos)
     queue << npos
@@ -81,15 +82,16 @@ side_cost = 0 # Part 2
 @areas.each_value do |plots|
   # Find boundaries (perimeters)
   area = plots.count
-  boundaries = Array.new(DIRS.count) { Set[] }
-  plots.each do |pos|
-    x, y = from_pos(pos)
-    DIRS.each_with_index do |(dx, dy), i|
-      npos = to_pos(x+dx, y+dy)
-      unless plots.include?(npos)
-        boundaries[i] << pos
+  boundaries = []
+  ALL_DIRS.each do |dx, dy|
+    dir_boundaries = Set[]
+    plots.each do |pos|
+      x, y = from_pos(pos)
+      unless plots.include?(to_pos(x+dx, y+dy))
+        dir_boundaries << pos
       end
     end
+    boundaries << dir_boundaries
   end
 
   # Part 1
@@ -97,21 +99,21 @@ side_cost = 0 # Part 2
   perimeter_cost += area * perimeters
 
   # Part 2
-  boundaries.zip(DIRS) do |list, (ddx, ddy)|
-    # For each boundary, remove all adjacent boundaries in both directions.
+  boundaries.zip(ALL_DIRS) do |list, (ddx, ddy)|
+    # For each boundary, remove any adjacent boundaries next to it.
     # This will only leave one boundary per side of fence.
-    moves = [[-ddy.abs, -ddx.abs], [ddy.abs, ddx.abs]]
-    list.each do |pos|
-      moves.each do |dx, dy|
+    [
+      # This makes us walk in negative and positive directions perpendicular to
+      # the boundary direction
+      [-ddy.abs, -ddx.abs],
+      [ ddy.abs,  ddx.abs]
+    ].each do |dx, dy|
+      list.each do |pos|
         x, y = from_pos(pos)
-        begin
-          x += dx
-          y += dy
-        end while list.delete?(to_pos(x, y))
+        while list.delete?(to_pos(x += dx, y += dy)); end
       end
     end
   end
-
   sides = boundaries.map(&:count).sum
   side_cost += area * sides
 end
