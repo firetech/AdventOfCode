@@ -46,7 +46,9 @@ puts "Checksum after compaction: #{checksum1}"
     space_start, space_length = @spaces[space]
     @blocks[id][0] = space_start
     if block_length == space_length
-      @spaces.delete_at(space)
+      # Make space unusable (faster than deleting).
+      @spaces[space][0] = Float::INFINITY
+      @spaces[space][1] = 0
     else
       @spaces[space][0] += block_length
       @spaces[space][1] -= block_length
