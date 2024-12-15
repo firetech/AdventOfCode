@@ -8,6 +8,14 @@ file = ARGV[0] || AOC.input_file()
 
 map_input, @moves = File.read(file).rstrip.split("\n\n")
 
+MAP_WIDTH = map_input.index("\n")
+MAP_HEIGHT = map_input.count("\n") + 1
+
+Y_BITS = Math.log2(MAP_HEIGHT).floor + 1
+def to_pos(x, y)
+  return x << Y_BITS | y
+end
+
 class Box
   attr_reader :width
 
@@ -18,18 +26,18 @@ class Box
     @width = width
 
     @width.times do |w|
-      @map[[@x+w, @y]] = self
+      @map[to_pos(@x+w, @y)] = self
     end
   end
 
   def can_move?(dx, dy)
     checked = Set[]
     @width.times do |w|
-      neighbour = @map[[@x+w+dx, @y+dy]]
+      neighbour = @map[to_pos(@x+w+dx, @y+dy)]
       case neighbour
       when self
         next
-      when :wall
+      when false
         return false
       when Robot
         raise 'Eh?!'
@@ -45,23 +53,26 @@ class Box
   def move(dx, dy)
     return false unless can_move?(dx, dy)
     moved = Set[]
+    new_pos = []
     @width.times do |w|
-      neighbour = @map[[@x+w+dx, @y+dy]]
+      npos = to_pos(@x+w+dx, @y+dy)
+      neighbour = @map[npos]
       case neighbour
       when self
-        next
+        # Do nothing
       when Box
         next if moved.include?(neighbour)
         moved << neighbour
         neighbour.move(dx, dy)
       end
-      raise 'Hmm...' if @map.delete([@x+w, @y]) != self
+      old_content = @map.delete(to_pos(@x+w, @y))
+      raise 'Hmm...' if old_content != self
+      new_pos << npos
     end
-    # If we move ourselves in the map in the loop above, we'll get overwritten
-    # by ourselves when moving right...
-    @width.times do |w|
-      @map[[@x+w+dx, @y+dy]] = self
-    end
+    # If we put each part in the new place in the map in the loop above, the
+    # right part of the box will drop the freshly moved left part from the map
+    # when moving right...
+    new_pos.each { |pos| @map[pos] = self }
     @x += dx
     @y += dy
     return true
@@ -81,12 +92,12 @@ end
 
 
 def print_map(i)
-  $map_height.times do |y|
+  MAP_HEIGHT.times do |y|
     last_box = nil
-    ($map_width * 2*i).times do |x|
-      content = $map[i][[x, y]]
+    (MAP_WIDTH * 2*i).times do |x|
+      content = $map[i][to_pos(x, y)]
       case content
-      when :wall
+      when false
         print '#'
       when Robot
         print '@'
@@ -131,11 +142,11 @@ map_input.split("\n").each_with_index do |line, y|
       end
     when '#'
       # Part 1
-      $map[0][[x, y]] = :wall
+      $map[0][to_pos(x, y)] = false
 
       # Part 2
-      $map[1][[x*2, y]] = :wall
-      $map[1][[x*2 + 1, y]] = :wall
+      $map[1][to_pos(x*2, y)] = false
+      $map[1][to_pos(x*2 + 1, y)] = false
     end
   end
 end
