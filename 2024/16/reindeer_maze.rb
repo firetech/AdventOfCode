@@ -6,12 +6,38 @@ file = ARGV[0] || AOC.input_file()
 #file = 'example1'
 #file = 'example2'
 
+map_lines = File.read(file).rstrip.split("\n")
+MAP_HEIGHT = map_lines.count
+MAP_WIDTH = map_lines.first.length
+
+X_BITS = Math.log2(MAP_WIDTH - 1).floor + 1
+X_MASK = (1 << X_BITS) - 1
+def to_pos(x, y)
+  return y << X_BITS | x
+end
+def from_pos(pos)
+  return pos & X_MASK, pos >> X_BITS
+end
+
+DIRS = [
+  [ 1,  0],
+  [ 0,  1],
+  [-1,  0],
+  [ 0, -1]
+]
+def to_state(pos, dir)
+  return pos << 2 | dir
+end
+def from_state(state)
+  return state >> 2, state & 0b11
+end
+
 @walls = Set[]
 @start = nil
 @end = nil
-File.read(file).rstrip.split("\n").each_with_index do |line, y|
+map_lines.each_with_index do |line, y|
   line.each_char.with_index do |char, x|
-    pos = Complex(x, y)
+    pos = to_pos(x, y)
     case char
     when '#'
       @walls << pos
@@ -29,7 +55,7 @@ File.read(file).rstrip.split("\n").each_with_index do |line, y|
   end
 end
 
-start = [@start, (1+0i)]
+start = to_state(@start, 0)
 cost = Hash.new(Float::INFINITY)
 cost[start] = 0
 path = {}
@@ -40,7 +66,7 @@ queue = PriorityQueue.new
 queue.push(start, 0)
 until queue.empty?
   state = queue.pop_min
-  pos, delta = state
+  pos, dir = from_state(state)
   this_cost = cost[state]
   this_path = path[state]
 
@@ -50,13 +76,17 @@ until queue.empty?
     break
   end
 
+  x, y = from_pos(pos)
+  dx, dy = DIRS[dir]
+  move_pos = to_pos(x+dx, y+dy)
+
   [
-    [pos + delta, delta, this_cost + 1],
-    [pos, delta * (0-1i), this_cost + 1000],
-    [pos, delta * (0+1i), this_cost + 1000]
-  ].each do |npos, ndelta, ncost|
+    [move_pos, dir, this_cost + 1],
+    [pos, (dir + 1) % 4, this_cost + 1000],
+    [pos, (dir - 1) % 4, this_cost + 1000]
+  ].each do |npos, ndir, ncost|
     next if @walls.include?(npos)
-    nstate = [npos, ndelta]
+    nstate = to_state(npos, ndir)
     current_cost = cost[nstate]
     if ncost < current_cost
       cost[nstate] = ncost
