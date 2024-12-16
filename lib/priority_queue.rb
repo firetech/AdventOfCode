@@ -38,6 +38,10 @@ class PriorityQueue
     return obj
   end
 
+  def priority(obj)
+    @map[obj]
+  end
+
   def size
     @queue.map { |_, l| l.size }.sum
   end
