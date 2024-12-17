@@ -47,18 +47,16 @@ end
 
 def run(r)
   ip = 0
-  out = []
   while ip < @program.length
     type, val = OPCODES[@program[ip]][r, @program[ip+1]]
     ip += 2
     case type
     when :out
-      out << val
+      yield val
     when :ip
       ip = val
     end
   end
-  return out
 end
 
 @registers = {}
@@ -77,43 +75,50 @@ File.read(file).rstrip.split("\n").each do |line|
 end
 
 # Part 1
-out = run(@registers.clone)
+out = []
+run(@registers.clone) { |o| out << o }
 puts "Program output: #{out.join(',')}"
 
 # Part 2
 # Due to how the input program works, the last output value is only affected
 # by the highest three bits in A. The second-to-last output value is similarily
-# selected by the next three bits (but also any higher bits).
+# selected by the next three bits (but also any higher bits), and so on.
 # Therefore, we can work backwards. Begin finding any A values that give the
 # correct _last_ output digit. Then, shift that value left three bits, and find
-# any lower three bits in the new value(s) that give the correct last two output
-# digits, and continue until the whole program is found. The first such value we
-# find is the lowest value.
+# any lower three bits in the new value(s) that give the correct second-to-last
+# output digit, and continue until the whole program is found. The first value
+# we find, that gives the complete program, is the lowest value.
 def find_quine
   queue = [[0, 0]]
-  target = @program.length
+  length = @program.length
   until queue.empty?
-    last_a, last_length = queue.shift
+    last_a, last_offset = queue.shift
 
     from = last_a << 3
     to = from | 0b111
-    length = last_length + 1
-    if length > target
+    offset = last_offset + 1
+    if offset > length
       break
     end
-    expect = @program.last(length)
+    next_index = length - offset
     (from..to).each do |a|
-      out = run({
+      run({
         A: a,
         B: @registers[:B],
         C: @registers[:C]
-      })
-      if out == expect
-        if length == target
-          return a
+      }) do |out|
+        if out == @program[next_index]
+          next_index += 1
         else
-          queue << [a, length]
+          break
         end
+      end
+      next unless next_index == length
+
+      if offset == length
+        return a
+      else
+        queue << [a, offset]
       end
     end
   end
