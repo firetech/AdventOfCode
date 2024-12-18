@@ -6,15 +6,17 @@ file = ARGV[0] || AOC.input_file()
 @part1_count = 1024
 #file = 'example1'; @max_coord = 6; @part1_count = 12
 
+Y_BITS = Math.log2(@max_coord).floor + 1
+Y_MASK = (1 << Y_BITS) - 1
 def to_pos(x, y)
-  return [x, y]
+  return x << Y_BITS | y
 end
 def from_pos(pos)
-  return pos
+  return pos >> Y_BITS, pos & Y_MASK
 end
 
 @list = []
-File.read(file).rstrip.split("\n").each do |line|
+File.read(file).rstrip.split("\n").each_with_index do |line|
   valid = false
   case line
   when /\A(\d+),(\d+)\z/
@@ -28,7 +30,8 @@ File.read(file).rstrip.split("\n").each do |line|
   raise "Malformed line: '#{line}'" unless valid
 end
 
-def run(corrupted)
+def run(num_blocks)
+  blocks = Set.new(@list.first(num_blocks))
   start = to_pos(0, 0)
   target = to_pos(@max_coord, @max_coord)
   range = 0..@max_coord
@@ -51,7 +54,7 @@ def run(corrupted)
       ny = y + dy
       next unless range.include?(ny)
       npos = to_pos(nx, ny)
-      next if corrupted.include?(npos)
+      next if blocks.include?(npos)
       next if dist[npos] <= ndist
       dist[npos] = ndist
       queue << npos
@@ -60,22 +63,12 @@ def run(corrupted)
   return nil
 end
 
-@corrupted = Set[]
-count = 0
-@list.each do |pos|
-  @corrupted << pos
-  count += 1
-  next if count < @part1_count
+# Part 1
+puts "Steps to exit: #{run(@part1_count)}"
 
-  dist = run(@corrupted)
-  if count == @part1_count
-    # Part 1
-    puts "Steps to exit: #{dist}"
-  else
-    # Part 2
-    if dist.nil?
-      puts "First byte blocking exit: #{from_pos(pos).join(',')}"
-      break
-    end
-  end
+# Part 2
+first_block_length = ((@part1_count+1)..@list.length).bsearch do |num_blocks|
+  run(num_blocks).nil?
 end
+first_block = @list[first_block_length - 1]
+puts "First byte blocking exit: #{from_pos(first_block).join(',')}"
