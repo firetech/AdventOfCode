@@ -6,7 +6,7 @@ file = ARGV[0] || AOC.input_file()
 
 OPCODES = {
   0 => ->(r, op) { # adv
-    r[:A] /= (1 << combo(r, op))
+    r[:A] >>= combo(r, op)
   },
   1 => ->(r, op) { # bxl
     r[:B] ^= op
@@ -24,10 +24,10 @@ OPCODES = {
     return :out, combo(r, op) & 0b111
   },
   6 => ->(r, op) { # bdv
-    r[:B] = r[:A] / (1 << combo(r, op))
+    r[:B] = r[:A] >> combo(r, op)
   },
   7 => ->(r, op) { # cdv
-    r[:C] = r[:A] / (1 << combo(r, op))
+    r[:C] = r[:A] >> combo(r, op)
   },
 }
 
