@@ -1,3 +1,4 @@
+require 'set'
 require_relative '../../lib/aoc'
 
 file = ARGV[0] || AOC.input_file()
@@ -5,18 +6,26 @@ file = ARGV[0] || AOC.input_file()
 
 towels_in, patterns_in = File.read(file).rstrip.split("\n\n")
 
-@towels = towels_in.split(', ').sort_by(&:length)
+@towels = {}
+towels_in.split(', ').each do |towel|
+  (@towels[towel.length] ||= Set[]) << towel
+end
 @patterns = patterns_in.split("\n")
 
 @cache = {}
-@cache[''.hash] = 1
 def ways(pattern)
   result = @cache[pattern.hash]
   if result.nil?
     result = 0
-    @towels.reverse_each do |towel|
-      if pattern.start_with?(towel)
-        result += ways(pattern[towel.length..-1])
+
+    plen = pattern.length
+    @towels.each do |tlen, list|
+      if plen > tlen
+        match = pattern[0...tlen]
+        remainder = pattern[tlen..-1]
+        result += ways(remainder) if list.include?(match)
+      elsif plen == tlen
+        result += 1 if list.include?(pattern)
       end
     end
     @cache[pattern.hash] = result
