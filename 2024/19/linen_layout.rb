@@ -5,7 +5,7 @@ file = ARGV[0] || AOC.input_file()
 
 towels_in, patterns_in = File.read(file).rstrip.split("\n\n")
 
-@towels = towels_in.split(', ').map { |t| [t, t.length] }.sort_by(&:last)
+@towels = towels_in.split(', ').sort_by(&:length)
 @patterns = patterns_in.split("\n")
 
 @cache = {}
@@ -14,9 +14,9 @@ def ways(pattern)
   result = @cache[pattern.hash]
   if result.nil?
     result = 0
-    @towels.reverse_each do |towel, len|
-      if pattern[0, len] == towel
-        result += ways(pattern[len..-1])
+    @towels.reverse_each do |towel|
+      if pattern.start_with?(towel)
+        result += ways(pattern[towel.length..-1])
       end
     end
     @cache[pattern.hash] = result
