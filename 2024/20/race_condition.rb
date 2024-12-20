@@ -4,12 +4,20 @@ file = ARGV[0] || AOC.input_file()
 @min_savings = (ARGV[1] || 100).to_i
 #file = 'example1'; @min_savings = 50
 
+MAX_STEPS_1 = 2 # Part 1
+MAX_STEPS_2 = 20 # Part 2
+MAX_STEPS = [MAX_STEPS_1, MAX_STEPS_2].max
+
 map_lines = File.read(file).rstrip.split("\n")
 
-MAX_STEPS = 20
-Y_BITS = Math.log2(map_lines.count - 1 + MAX_STEPS).floor + 1
+Y_BITS = Math.log2(map_lines.count - 1).floor + 1
+Y_MASK = (1 << Y_BITS) - 1
 def to_pos(x, y)
   return (x << Y_BITS) + y
+end
+def manhattan(p1, p2)
+  return ((p2 >> Y_BITS) - (p1 >> Y_BITS)).abs +
+      ((p2 & Y_MASK) - (p1 & Y_MASK)).abs
 end
 
 @start = nil
@@ -37,43 +45,53 @@ end
 
 # Find base (cheat-less) path
 queue = [@start]
-@dist = { @start => 0 }
+from = { @start => nil }
 until queue.empty?
   pos = queue.shift
   break if pos == @end
 
-  ndist = @dist[pos] + 1
   [[0, -1], [0, 1], [-1, 0], [1, 0]].each do |dx, dy|
     npos = pos + to_pos(dx, dy)
-    next if @walls[npos] or @dist[npos]
-    @dist[npos] = ndist
+    next if @walls[npos] or from.has_key?(npos)
+    from[npos] = pos
     queue << npos
   end
 end
+@path = []
+node = @end
+until node.nil?
+  @path.unshift(node)
+  node = @from[node]
+end
 
-# Find cheats with specified maximum (and minimum) path length
-def num_cheats(max_steps, min_steps = 1)
-  cheats = 0
-  (-max_steps).upto(max_steps).each do |dx|
-    max_dy = max_steps - dx.abs
-    (-max_dy).upto(max_dy) do |dy|
-      cheat_dist = dx.abs + dy.abs
-      next if cheat_dist < min_steps
-      dpos = to_pos(dx, dy)
-      @dist.each do |pos, steps|
-        nsteps = @dist[pos + dpos]
-        next if nsteps.nil?
-        cheats += 1 if nsteps - (steps + cheat_dist) >= @min_savings
+# Count the number of possible cheat paths
+len = @path.length
+max_check = len - @min_savings
+@cheats = [0, 0]
+@path.each_with_index do |pos, steps|
+  break if steps > max_check
+  nsteps = steps + @min_savings
+  while nsteps < len
+    dist = manhattan(pos, @path[nsteps])
+    if dist > MAX_STEPS
+      # If we end up on a point further away than the maximum number of steps,
+      # we can skip ahead the minimum number of steps needed to get from that
+      # point to being back inside out cheatable radius.
+      nsteps += dist - MAX_STEPS
+    else
+      if nsteps - (steps + dist) >= @min_savings
+        @cheats[0] += 1 if dist <= MAX_STEPS_1 # Part 1
+        @cheats[1] += 1 if dist <= MAX_STEPS_2 # Part 2
       end
+      nsteps += 1
     end
   end
-  return cheats
 end
 
 # Part 1
-@cheats2 = num_cheats(2)
-puts "#{@cheats2} possible 2-picosecond-cheats save more than #{@min_savings} picoseconds"
+puts "#{@cheats[0]} possible #{MAX_STEPS_1}-picosecond-cheats save more than " \
+     "#{@min_savings} picoseconds"
 
 # Part 2
-@cheats20 = @cheats2 + num_cheats(MAX_STEPS, 3)
-puts "#{@cheats20} possible 20-picosecons-cheats save more than #{@min_savings} picoseconds"
+puts "#{@cheats[1]} possible #{MAX_STEPS_2}-picosecons-cheats save more than " \
+     "#{@min_savings} picoseconds"
