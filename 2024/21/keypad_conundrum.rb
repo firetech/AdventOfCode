@@ -4,6 +4,12 @@ require_relative '../../lib/aoc'
 file = ARGV[0] || AOC.input_file()
 #file = 'example1'
 
+# This works for negative coordinates, BUT ONLY if they're only ever used as
+# delta values.
+# I.e.
+#   to_pos(3, 4) + to_pos(-2, -3) == to_pos(1, 1)
+# but
+#   from_pos(to_pos(-2, -3)) != [-2, -3]
 Y_BITS = 2
 Y_MASK = 0b11
 def to_pos(x, y)
