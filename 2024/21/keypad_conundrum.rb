@@ -4,11 +4,13 @@ require_relative '../../lib/aoc'
 file = ARGV[0] || AOC.input_file()
 #file = 'example1'
 
+Y_BITS = 2
+Y_MASK = 0b11
 def to_pos(x, y)
-  return Complex(x, y)
+  return (x << Y_BITS) + y
 end
 def from_pos(pos)
-  return pos.real, pos.imag
+  return pos >> Y_BITS, pos & Y_MASK
 end
 
 KEYPAD = {
@@ -93,10 +95,10 @@ end
 
 # Find the minimum sequence length for a given depth (number of robots).
 @min_seq_cache = {}
-def minimal_sequence_length(pad, code, depth)
+def minimal_sequence_length(code, depth, pad = KEYPAD)
   return code.length if depth == 0
 
-  cache_key = [pad == KEYPAD, code, depth].hash
+  cache_key = [code, depth, pad == KEYPAD].hash
   minimal_length = @min_seq_cache[cache_key]
   if minimal_length.nil?
     pos = :A
@@ -105,7 +107,7 @@ def minimal_sequence_length(pad, code, depth)
 
     code.each do |key|
       lengths = key_to_key_paths(pad, pos, key).map do |path|
-        minimal_sequence_length(DIRPAD, path, ndepth)
+        minimal_sequence_length(path, ndepth, DIRPAD)
       end
       minimal_length += lengths.min
       pos = key
@@ -117,12 +119,12 @@ end
 
 # Part 1
 sum1 = @list.sum do |value, code|
-  value * minimal_sequence_length(KEYPAD, code, 3)
+  value * minimal_sequence_length(code, 3)
 end
 puts "Complexity sum for three robots: #{sum1}"
 
 # Part 2
 sum2 = @list.sum do |value, code|
-  value * minimal_sequence_length(KEYPAD, code, 26)
+  value * minimal_sequence_length(code, 26)
 end
 puts "Complexity sum for 26 robots: #{sum2}"
