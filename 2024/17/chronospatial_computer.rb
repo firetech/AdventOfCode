@@ -100,8 +100,8 @@ def find_quine
     if offset > length
       break
     end
-    next_index = length - offset
     (from..to).each do |a|
+      next_index = length - offset
       run({
         A: a,
         B: @registers[:B],
