@@ -21,7 +21,8 @@ end
 
 stop = nil
 begin
-  input, output, stop, nrunners = Multicore.run(-8) do |worker_in, worker_out|
+  max_threads = [8, @numbers.length].min
+  input, output, stop, nrunners = Multicore.run(-max_threads) do |worker_in, worker_out|
     this_sum2000 = 0
     this_totals = Hash.new(0)
     worker_in[].each do |num|
