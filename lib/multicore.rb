@@ -14,12 +14,13 @@ module Multicore
   IPC_EXIT = '__IPC_CHILD_EXIT__'
 
   public
-  def self.run(nthreads = Etc.nprocessors)
+  def self.run(nthreads = Etc.nprocessors, force_threads = false)
+    nthreads = [-nthreads, Etc.nprocessors].min if nthreads < 0
     input_queue = Queue.new
     output_queue = Queue.new
     threads = []
     err_lock = Mutex.new
-    if RUBY_PLATFORM == 'java'
+    if RUBY_PLATFORM == 'java' or force_threads
       # JRuby doesn't have a GIL, just use Threads
       worker_input = -> { input_queue.pop }
       worker_output = ->(val) { output_queue << val }
@@ -121,7 +122,7 @@ module Multicore
         end
       end
     end
-    return input_queue, output_queue, stop
+    return input_queue, output_queue, stop, nthreads
   end
 
   private
