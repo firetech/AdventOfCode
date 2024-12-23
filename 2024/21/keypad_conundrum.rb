@@ -42,8 +42,8 @@ DIRPAD = {
   :A            => to_pos(2, 0),
 
   to_pos(-1, 0) => to_pos(0, 1), # <, Left
-  to_pos(0, 1) => to_pos(1, 1),  # v, Down
-  to_pos(1, 0) => to_pos(2, 1)   # >, Right
+  to_pos(0, 1)  => to_pos(1, 1), # v, Down
+  to_pos(1, 0)  => to_pos(2, 1)  # >, Right
 }
 DIRPAD[:valid] = Set.new(DIRPAD.values)
 
@@ -90,6 +90,10 @@ def key_to_key_paths(pad, from, to)
       dirs << to_pos(0, dy) if dy != 0
 
       dirs.each do |dpos|
+        # Skip zigzag paths (e.g. >v>). Since the path will at most contain two
+        # distinct directions (generated above), we only need to check the
+        # first and last values in the path to make sure of this.
+        next if path.first == dpos and path.last != dpos
         npos = pos + dpos
         queue << [npos, path + [dpos]] if pad[:valid].include?(npos)
       end
