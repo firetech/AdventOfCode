@@ -20,10 +20,10 @@ end
 # Part 1
 threes_with_t = Set[]
 @connections.each do |node1, list|
+  next unless node1.start_with?('t')
   list.each do |node2|
     (list & @connections[node2]).each do |node3|
-      nodes = Set[node1, node2, node3]
-      threes_with_t << nodes if nodes.any? { |n| n.start_with?('t') }
+      threes_with_t << [node1, node2, node3].sort.hash
     end
   end
 end
