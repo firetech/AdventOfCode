@@ -1,7 +1,6 @@
 require_relative '../../lib/aoc'
 
 file = ARGV[0] || AOC.input_file()
-#file = 'fixed_input'
 #file = 'example1'
 #file = 'example2'
 
@@ -62,20 +61,29 @@ puts "Decimal output: #{num}"
 
 # Part 2
 @inversenet = @network.invert
-def get_gate(gate)
-  g = @inversenet[gate]
-  g = @inversenet[gate.reverse] if g.nil?
-  raise "No gate matches #{gate.join(' ')}!" if g.nil?
-  return g
+@remap = Hash.new { |_, line| line } # Default value is itself
+def swap(a, b)
+  raise 'Cannot swap nil!' if a.nil? or b.nil?
+  @remap[a] = b
+  @remap[b] = a
+  return b, a
 end
-def assert_gate(name, gate)
-  actual_name = get_gate(gate)
-  return if actual_name == name
-  raise "#{gate.join(' ')} should be #{name} instead of #{actual_name}"
+def get_gate(gate, raise_on_nil = true)
+  name = @inversenet[gate]
+  name = @inversenet[gate.reverse] if name.nil?
+  raise "No gate matches #{gate.join(' ')}!" if raise_on_nil and name.nil?
+  return @remap[name]
+end
+def assert_gate(expected, gate)
+  name = get_gate(gate, false)
+  if name != expected and not name.nil?
+    swap(name, expected)
+  end
+  return name
 end
 
-@map = {}
 last_i = @z_keys.length - 1
+carry = nil
 fixed = true
 # Full adder for z = x + y (bit 00 is LSB):
 # z00 = x00 XOR y00  (no carry in)
@@ -87,28 +95,33 @@ fixed = true
 # wi = c(i-1) AND ui
 # ci = vi OR wi
 #
-# zn = c(n-1)
+# zN = c(N-1)  (where N is the maximum index)
 @z_keys.each_with_index do |z, i|
   begin
     if i == 0
       assert_gate(z, ['x00', :XOR, 'y00'])
-      @map['c00'] = get_gate(['x00', :AND, 'y00'])
+      carry = get_gate(['x00', :AND, 'y00'])
     elsif i < last_i
-      @map['u%02d' % i] = get_gate(['x%02i' % i, :XOR, 'y%02i' % i])
-      @map['v%02d' % i] = get_gate(['x%02i' % i, :AND, 'y%02i' % i])
-      assert_gate(z, [@map['c%02i' % (i-1)], :XOR, @map['u%02d' % i]])
-      @map['w%02d' % i] = get_gate([@map['c%02i' % (i-1)], :AND, @map['u%02d' % i]])
-      @map['c%02d' % i] = get_gate([@map['v%02i' % i], :OR, @map['w%02d' % i]])
+      u = get_gate(['x%02i' % i, :XOR, 'y%02i' % i])
+      v = get_gate(['x%02i' % i, :AND, 'y%02i' % i])
+      if assert_gate(z, [carry, :XOR, u]).nil?
+        u, v = swap(u, v)
+        raise "I don't know what to do :(" if assert_gate(z, [carry, :XOR, u]).nil?
+      end
+      # Fetch u and v again incase they were swapped with zXX
+      u = get_gate(['x%02i' % i, :XOR, 'y%02i' % i])
+      v = get_gate(['x%02i' % i, :AND, 'y%02i' % i])
+      w = get_gate([carry, :AND, u])
+      carry = get_gate([v, :OR, w])
     else
-      actual_name = @map['c%02d' % (i - 1)]
-      raise "#{actual_name} should be #{z}" unless actual_name == z
+      swap(carry, z) if carry != z
     end
   rescue => e
     puts "#{z} has error: #{e.message}"
+    puts e.backtrace.join("\n")
     fixed = false
     break
   end
 end
 # Swap wires in network manually and fill this in...
-@swaps = []
-puts "Needed swaps: #{@swaps.sort.join(',')}" if fixed
+puts "Needed swaps: #{@remap.keys.sort.join(',')}" if fixed
