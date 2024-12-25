@@ -16,48 +16,47 @@ def next_secret(n)
   return (n ^ (n << 11)) & PRUNE # (n ^ (n * 2048)) % 16777216
 end
 
-@sum2000 = 0 # Part 1
-@totals = Hash.new(0) # Part 2
-
 stop = nil
-max_threads = [8, @numbers.length].min
+max_threads = [16, @numbers.length].min
 begin
   input, output, stop, nrunners = Multicore.run(-max_threads) do |worker_in, worker_out|
-    this_sum2000 = 0
-    this_totals = Hash.new(0)
+    sum2000 = 0
+    totals = Hash.new(0)
     worker_in[].each do |num|
-      diffs = []
+      d1 = d2 = d3 = d4 = nil
       seen = Set[]
-      last = nil
-      2000.times do |i|
+      last = num % 10
+      num = next_secret(num)
+      1999.times do
         # Part 2
         price = num % 10
-        unless last.nil?
-          diffs << last - price
-          if i >= 4
-            key = diffs.hash
-            this_totals[key] += price if seen.add?(key)
-            diffs.shift
-          end
+        d4 = d3
+        d3 = d2
+        d2 = d1
+        d1 = last - price
+        if d4
+          key = ((d1 + 9) << 15) | ((d2 + 9) << 10) | ((d3 + 9) << 5) | (d4 + 9)
+          totals[key] += price if seen.add?(key)
         end
         last = price
         num = next_secret(num)
       end
-      this_sum2000 += num
+
+      # Part 1
+      sum2000 += num
     end
-    worker_out[[this_sum2000, this_totals]]
+    worker_out[[sum2000, totals]]
   end
   runner_slice = (@numbers.length / nrunners.to_f).ceil
   @numbers.each_slice(runner_slice) do |list|
     input << list
   end
+  @sum2000 = 0 # Part 1
+  @totals = {} # Part 2
   nrunners.times do
-    this_sum2000, this_totals = output.pop
-    # Part 1
-    @sum2000 += this_sum2000
-
-    # Part 2
-    @totals.merge!(this_totals) { |_, v1, v2| v1 + v2 }
+    sum2000, totals = output.pop
+    @sum2000 += sum2000 # Part 1
+    @totals.merge!(totals) { |_, v1, v2| v1 + v2 } # Part 2
   end
 ensure
   stop[]
