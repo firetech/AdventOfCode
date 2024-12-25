@@ -34,13 +34,19 @@ puts "Groups of three possibly containing chief: #{threes_with_t.length}"
 # of computers (all connected to eachother).
 # (Adapted from 2018/23.)
 def bron_kerbosch(possible, result = Set[], exclude = Set[])
-  possible = Set.new(possible) unless possible.is_a?(Set)
   if possible.empty? and exclude.empty?
     return result
   else
-    pivot = (possible + exclude).max_by { |node| @connections[node].size }
+    poss_max = possible.max_by { |node| @connections[node].size }
+    excl_max = exclude.max_by { |node| @connections[node].size }
+    if not poss_max.nil? and (excl_max.nil? or excl_max.size < poss_max.size)
+      pivot = poss_max
+    else
+      pivot = excl_max
+    end
     pivot_neighbours = @connections[pivot]
-    results = (possible - pivot_neighbours).map do |node|
+    results = possible.to_a.filter_map do |node|
+      next if pivot_neighbours.include?(node)
       node_result = bron_kerbosch(
         possible & @connections[node],
         result + [node],
@@ -57,4 +63,5 @@ def bron_kerbosch(possible, result = Set[], exclude = Set[])
     end
   end
 end
-puts "LAN party password: #{bron_kerbosch(@connections.keys).sort.join(',')}"
+clique = bron_kerbosch(Set.new(@connections.keys))
+puts "LAN party password: #{clique.sort.join(',')}"
