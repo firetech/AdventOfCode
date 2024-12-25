@@ -20,8 +20,8 @@ end
 @totals = Hash.new(0) # Part 2
 
 stop = nil
+max_threads = [8, @numbers.length].min
 begin
-  max_threads = [8, @numbers.length].min
   input, output, stop, nrunners = Multicore.run(-max_threads) do |worker_in, worker_out|
     this_sum2000 = 0
     this_totals = Hash.new(0)
@@ -36,10 +36,7 @@ begin
           diffs << last - price
           if i >= 4
             key = diffs.hash
-            unless seen.include?(key)
-              seen << key
-              this_totals[key] += price
-            end
+            this_totals[key] += price if seen.add?(key)
             diffs.shift
           end
         end
