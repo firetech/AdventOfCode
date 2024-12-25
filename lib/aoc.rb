@@ -81,7 +81,11 @@ module AOC
     end
     year = Time.now.year if year.nil?
     if day.nil?
-      pwd = File.dirname(File.expand_path($PROGRAM_NAME))
+      c = 0
+      begin
+        pwd = File.dirname(File.expand_path(caller_locations[c].path))
+        c += 1
+      end while pwd == __dir__
       year, day, *extra = pwd.sub(/\A#{Regexp.escape(base)}\//, '').split('/')
       unless year =~ /\A\d{4}\z/ and day =~ /\A\d{1,2}\z/ and extra.empty?
         STDERR.puts "Did you run AOC.input_file() in a puzzle folder " \
