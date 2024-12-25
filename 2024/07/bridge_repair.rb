@@ -17,36 +17,37 @@ File.read(file).rstrip.split("\n").each do |line|
   end
 end
 
-OPERATORS = [:+, :*] # Part 1
+OPERATORS = [:add, :mul] # Part 1
 JOIN_OPERATORS = OPERATORS + [:join] # Part 2
 
 def is_possible(result, operands, allow_join = false)
   # DFS into the decision tree
-  first_operand, *rest_operands = operands
-  stack = [[first_operand, rest_operands]]
+  stack = [[operands[0], 1]]
+  last_i = operands.length - 1
   operators = allow_join ? JOIN_OPERATORS : OPERATORS
   until stack.empty?
-    value, operands_left = stack.pop
+    value, i = stack.pop
 
-    this_operand, *next_operands = operands_left
+    this_operand = operands[i]
 
     operators.each do |op|
-      if op == :join
+      case op
+      when :add
+        new_value = value + this_operand
+      when :mul
+        new_value = value * this_operand
+      when :join
         shift = 10**(Math.log10(this_operand).floor + 1)
         new_value = value * shift + this_operand
-      else
-        new_value = value.send(op, this_operand)
       end
-      if next_operands.empty?
-        if new_value == result
-          return true
-        end
+      if i == last_i
+        return true if new_value == result
       elsif new_value <= result
         # All operations are increasing the resulting value, so intermediate
         # values will never be > the result (as long as no operand is 0, which
         # seems to be the case). It can, however be == result, since the rest
         # of the operands may be 1.
-        stack << [new_value, next_operands]
+        stack << [new_value, i+1]
       end
     end
   end
@@ -58,20 +59,25 @@ true_sum_concat = 0 # Part 2
 stop = nil
 begin
   input, output, stop = Multicore.run do |worker_in, worker_out|
-    until (result, operands = worker_in[]).nil?
+    until (list = worker_in[]).nil?
       results = [0, 0]
-      if is_possible(result, operands)
-        results[0] = results[1] = result
-      elsif is_possible(result, operands, true)
-        results[1] = result
+      list.each do |result, operands|
+        if is_possible(result, operands)
+          results[0] += result
+          results[1] += result
+        elsif is_possible(result, operands, true)
+          results[1] += result
+        end
       end
       worker_out[results]
     end
   end
-  @equations.each do |result, operands|
-    input << [result, operands]
+  inputs = 0
+  @equations.each_slice(4) do |list|
+    input << list
+    inputs += 1
   end
-  @equations.count.times do
+  inputs.times do
     results = output.pop
     true_sum += results[0]
     true_sum_concat += results[1]
