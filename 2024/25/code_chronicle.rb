@@ -5,34 +5,34 @@ file = ARGV[0] || AOC.input_file()
 
 blocks = File.read(file).rstrip.split("\n\n")
 
-@list = []
-blocks.each do |block_in|
+@locks = []
+@keys = []
+blocks.each do |block|
   heights = []
-  block = block_in.split("\n").map(&:chars).transpose
-  block.each do |column|
+  block.split("\n").map(&:chars).transpose.each do |column|
     heights << column.count('#') - 1
   end
-  case block.first.first
+  case block[0]
   when '#'
-    type = :lock
+    @locks << heights
   when '.'
-    type = :key
+    @keys << heights
   else
-    raise "Unexpected character: '#{block.first.first}'"
+    raise "Unexpected character: '#{block[0]}'"
   end
-  @list << [type, heights]
 end
 
 count = 0
-@list.combination(2) do |(type_a, heights_a), (type_b, heights_b)|
-  next if type_a == type_b
-  match = true
-  heights_a.zip(heights_b) do |a, b|
-    if a + b > 5
-      match = false
-      break
+@locks.each do |lock|
+  @keys.each do |key|
+    match = true
+    key.zip(lock) do |k, l|
+      if k + l > 5
+        match = false
+        break
+      end
     end
+    count += 1 if match
   end
-  count += 1 if match
 end
 puts "Unique key/lock pairs without overlap: #{count}"
