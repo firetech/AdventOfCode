@@ -29,6 +29,7 @@ outputs.split("\n").each do |line|
   end
 end
 
+
 # Part 1
 def network_eval(output)
   val = @network[output]
@@ -59,69 +60,106 @@ num = 0
 end
 puts "Decimal output: #{num}"
 
+
 # Part 2
 @inversenet = @network.invert
 @remap = Hash.new { |_, line| line } # Default value is itself
 def swap(a, b)
-  raise 'Cannot swap nil!' if a.nil? or b.nil?
+  raise "#{a} is already swapped" if @remap.has_key?(a)
+  raise "#{b} is already swapped" if @remap.has_key?(b)
   @remap[a] = b
   @remap[b] = a
   return b, a
 end
-def get_gate(gate, raise_on_nil = true)
+def get_gate(gate)
   name = @inversenet[gate]
   name = @inversenet[gate.reverse] if name.nil?
-  raise "No gate matches #{gate.join(' ')}!" if raise_on_nil and name.nil?
+  raise "No gate matches #{gate.join(' ')}!" if name.nil?
   return @remap[name]
 end
 def assert_gate(expected, gate)
-  name = get_gate(gate, false)
-  if name != expected and not name.nil?
+  name = get_gate(gate)
+  assert_name(expected, name)
+end
+def assert_name(expected, name)
+  if name != expected
     swap(name, expected)
   end
-  return name
 end
 
 last_i = @z_keys.length - 1
 carry = nil
-fixed = true
 # Full adder for z = x + y (bit 00 is LSB):
 # z00 = x00 XOR y00  (no carry in)
-# c00 = x00 AND y00
+# carry = x00 AND y00
+# ...
+# x_xor_y = xNN XOR yNN
+# x_and_y = xNN AND yNN
+# zNN = carry XOR x_xor_y
+# c_and_xor = carry AND x_xor_y
+# carry = x_and_y OR c_and_xor
+# ...
+# zMM = carry  (where MM is the maximum index)
 #
-# ui = xi XOR yi
-# vi = xi AND yi
-# zi = c(i-1) XOR ui
-# wi = c(i-1) AND ui
-# ci = vi OR wi
-#
-# zN = c(N-1)  (where N is the maximum index)
+# The solution below is not _fully_ general. There are some possible corner
+# cases that aren't handled. The ones I'm aware of are specifically checked for.
+# However, it works correctly on at least the two inputs I've tested. There
+# seems to be a pattern in which types of swaps are present in the inputs.
 @z_keys.each_with_index do |z, i|
-  begin
-    if i == 0
-      assert_gate(z, ['x00', :XOR, 'y00'])
-      carry = get_gate(['x00', :AND, 'y00'])
-    elsif i < last_i
-      u = get_gate(['x%02i' % i, :XOR, 'y%02i' % i])
-      v = get_gate(['x%02i' % i, :AND, 'y%02i' % i])
-      if assert_gate(z, [carry, :XOR, u]).nil?
-        u, v = swap(u, v)
-        raise "I don't know what to do :(" if assert_gate(z, [carry, :XOR, u]).nil?
+  if i == 0
+    # First adder is simpler. Since the problem states that only gate output
+    # wires have been swapped, these two gates _must_ exist.
+    assert_gate(z, ['x00', :XOR, 'y00'])
+    carry = get_gate(['x00', :AND, 'y00'])
+  elsif i < last_i
+    # Again, since only gate outputs are swapped, these gates _must_ exist.
+    x_xor_y = get_gate(['x%02i' % i, :XOR, 'y%02i' % i])
+    x_and_y = get_gate(['x%02i' % i, :AND, 'y%02i' % i])
+    begin
+      assert_gate(z, [carry, :XOR, x_xor_y])
+      # Update x_and_y if it was swapped with zNN and remapped by assert_gate.
+      x_and_y = @remap[x_and_y] if x_and_y == z
+    rescue
+      # In case x_xor_y and/or carry output has been swapped, the expected zNN
+      # gate will not be found, and we end up here. Try to fix it and retry the
+      # assert_gate call.
+      a, op, b = @network[z]
+      raise "#{z} is not an XOR gate, are both it and one of its expected " \
+            "inputs swapped?" if op != :XOR
+      if a == carry or b == carry
+        a, b = b, a if b == carry # Make sure a is carry.
+        b, x_xor_y = swap(b, x_xor_y)
+        # In case x_xor_y was swapped specifically with x_and_y (which seems to
+        # be what it gets swapped with), we need to also update that gate name.
+        x_and_y = b if x_and_y == x_xor_y
+      elsif a == x_xor_y or b == x_xor_y
+        # This case doesn't appear in any tested input, so this is untested.
+        a, b = b, a if b == x_xor_y # Make sure a is x_xor_y.
+        b, carry = swap(b, carry)
+        # In case carry was swapped specifically with x_and_y, we need to also
+        # update that gate name.
+        x_and_y = b if x_and_y == carry
+      else
+        # No input gate is recognized (doesn't happen in any tested input).
+        raise "Unable to fix #{z}, are both #{carry} and #{x_xor_y} swapped?"
       end
-      # Fetch u and v again incase they were swapped with zXX
-      u = get_gate(['x%02i' % i, :XOR, 'y%02i' % i])
-      v = get_gate(['x%02i' % i, :AND, 'y%02i' % i])
-      w = get_gate([carry, :AND, u])
-      carry = get_gate([v, :OR, w])
-    else
-      swap(carry, z) if carry != z
+      retry
     end
-  rescue => e
-    puts "#{z} has error: #{e.message}"
-    puts e.backtrace.join("\n")
-    fixed = false
-    break
+    # At this point, we should be certain that carry and x_xor_y are correctly
+    # connected (including any swaps from above), since we could find the zNN
+    # gate. This gate should therefore exist.
+    c_and_xor = get_gate([carry, :AND, x_xor_y])
+    # This might, however, fail. The gate itself must exist, but either of its
+    # input gates might have their output wires swapped, making it hard to find
+    # (thankfully, that hasn't happened in any tested input).
+    begin
+      carry = get_gate([x_and_y, :OR, c_and_xor])
+    rescue
+      raise "#{z} carry was not found. #{x_and_y} and/or #{c_and_xor} swapped?"
+    end
+  else
+    # Last zNN should just be the last carry.
+    assert_name(z, carry)
   end
 end
-# Swap wires in network manually and fill this in...
-puts "Needed swaps: #{@remap.keys.sort.join(',')}" if fixed
+puts "Needed swaps: #{@remap.keys.sort.join(',')}"
