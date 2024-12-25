@@ -67,7 +67,7 @@ end
 node = @end
 until node.nil?
   @path.unshift(node)
-  node = @from[node]
+  node = from[node]
 end
 
 # Count the number of possible cheat paths
