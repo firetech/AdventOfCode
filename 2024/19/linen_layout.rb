@@ -21,8 +21,8 @@ def ways(pattern)
     plen = pattern.length
     @towels.each do |tlen, list|
       if plen > tlen
-        match = pattern[0...tlen]
-        remainder = pattern[tlen..-1]
+        match = pattern[0, tlen]
+        remainder = pattern[tlen, plen-tlen]
         result += ways(remainder) if list.include?(match)
       elsif plen == tlen
         result += 1 if list.include?(pattern)
