@@ -30,8 +30,7 @@ class Box
     end
   end
 
-  def can_move?(dx, dy)
-    checked = Set[]
+  def can_move?(dx, dy, checked = [])
     @width.times do |w|
       neighbour = @map[to_pos(@x+w+dx, @y+dy)]
       case neighbour
@@ -42,17 +41,17 @@ class Box
       when Robot
         raise 'Eh?!'
       when Box
-        next if checked.include?(neighbour)
-        checked << neighbour
-        return false unless neighbour.can_move?(dx,dy)
+        unless checked.include?(neighbour)
+          checked << neighbour
+          return false unless neighbour.can_move?(dx, dy, checked)
+        end
       end
     end
     return true
   end
 
-  def move(dx, dy)
+  def move(dx, dy, moved = [])
     return false unless can_move?(dx, dy)
-    moved = Set[]
     new_pos = []
     @width.times do |w|
       npos = to_pos(@x+w+dx, @y+dy)
@@ -61,9 +60,10 @@ class Box
       when self
         # Do nothing
       when Box
-        next if moved.include?(neighbour)
-        moved << neighbour
-        neighbour.move(dx, dy)
+        unless moved.include?(neighbour)
+          moved << neighbour
+          neighbour.move(dx, dy, moved)
+        end
       end
       old_content = @map.delete(to_pos(@x+w, @y))
       raise 'Hmm...' if old_content != self
