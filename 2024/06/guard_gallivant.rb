@@ -15,12 +15,8 @@ MAP_HEIGHT = map_in.length
 # but
 #   from_pos(to_pos(-2, -3)) != [-2, -3]
 Y_BITS = Math.log2(MAP_HEIGHT-1).floor + 1
-Y_MASK = (1 << Y_BITS) - 1
 def to_pos(x, y)
   return (x << Y_BITS) + y
-end
-def from_pos(pos)
-  return pos >> Y_BITS, pos & Y_MASK
 end
 
 DIR_TO_DXDY = [
