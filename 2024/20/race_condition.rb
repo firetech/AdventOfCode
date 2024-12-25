@@ -1,4 +1,5 @@
 require_relative '../../lib/aoc'
+require_relative '../../lib/multicore'
 
 file = ARGV[0] || AOC.input_file()
 @min_savings = (ARGV[1] || 100).to_i
@@ -72,26 +73,47 @@ end
 
 # Count the number of possible cheat paths
 len = @path.length
-max_check = len - @min_savings
-@cheats = [0, 0]
-@path.each_with_index do |pos, steps|
-  break if steps > max_check
-  nsteps = steps + @min_savings
-  while nsteps < len
-    dist = manhattan(pos, @path[nsteps])
-    if dist > MAX_STEPS
-      # If we end up on a point further away than the maximum number of steps,
-      # we can skip ahead the minimum number of steps needed to get from that
-      # point to being back inside out cheatable radius.
-      nsteps += dist - MAX_STEPS
-    else
-      if nsteps - (steps + dist) >= @min_savings
-        @cheats[0] += 1 if dist <= MAX_STEPS_1 # Part 1
-        @cheats[1] += 1 if dist <= MAX_STEPS_2 # Part 2
+stop = nil
+max_threads = [12, len].min
+begin
+  input, output, stop, workers = Multicore.run(-max_threads) do |worker_in, worker_out|
+    cheats = [0, 0]
+    worker_in[].each do |pos, steps|
+      nsteps = steps + @min_savings
+      while nsteps < len
+        dist = manhattan(pos, @path[nsteps])
+        if dist > MAX_STEPS
+          # If we end up on a point further away than the maximum number of steps,
+          # we can skip ahead the minimum number of steps needed to get from that
+          # point to being back inside out cheatable radius.
+          nsteps += dist - MAX_STEPS
+        else
+          if nsteps - (steps + dist) >= @min_savings
+            cheats[0] += 1 if dist <= MAX_STEPS_1 # Part 1
+            cheats[1] += 1 if dist <= MAX_STEPS_2 # Part 2
+          end
+          nsteps += 1
+        end
       end
-      nsteps += 1
     end
+    worker_out[cheats]
   end
+  max_check = len - @min_savings
+  inputs = []
+  @path.each_with_index do |pos, steps|
+    break if steps > max_check
+    inputs << [pos, steps]
+  end
+  worker_slice = (inputs.length / workers.to_f).ceil
+  inputs.each_slice(worker_slice) { |list| input << list }
+  @cheats = [0, 0]
+  workers.times do
+    this_cheats = output.pop
+    @cheats[0] += this_cheats[0]
+    @cheats[1] += this_cheats[1]
+  end
+ensure
+  stop[]
 end
 
 # Part 1
