@@ -4,25 +4,35 @@ require_relative '../../lib/aoc'
 file = ARGV[0] || AOC.input_file()
 #file = 'example1'
 
-X_BITS = 8
-X_MASK = (1 << X_BITS) - 1
+map_in = File.read(file).rstrip.split("\n")
+MAP_HEIGHT = map_in.length
+
+# This works for negative coordinates, BUT ONLY if they're only ever used as
+# delta values.
+# I.e.
+#   to_pos(3, 4) + to_pos(-2, -3) == to_pos(1, 1)
+# but
+#   from_pos(to_pos(-2, -3)) != [-2, -3]
+Y_BITS = Math.log2(MAP_HEIGHT-1).floor + 1
 def to_pos(x, y)
-  return y << X_BITS | x
+  return (x << Y_BITS) + y
 end
-def from_pos(pos)
-  return pos & X_MASK, pos >> X_BITS
-end
+
+DIRS = [
+  to_pos( 1,  0),
+  to_pos( 0, -1),
+  to_pos(-1,  0),
+  to_pos( 0,  1)
+]
 
 @heads = []
 @map = {}
-File.read(file).rstrip.split("\n").each_with_index do |line, y|
+map_in.each_with_index do |line, y|
   line.each_char.with_index do |val, x|
     val_i = val.to_i
     pos = to_pos(x, y)
     @map[pos] = val_i
-    if val_i == 0
-      @heads << pos
-    end
+    @heads << pos if val_i == 0
   end
 end
 
@@ -39,15 +49,9 @@ end
       @peak_sum += 1 if peaks.add?(pos) # Part 1
       @path_sum += 1 # Part 2
     else
-      x, y = from_pos(pos)
       nheight = height + 1
-      [
-        [ 1,  0],
-        [ 0, -1],
-        [-1,  0],
-        [ 0,  1]
-      ].each do |dx, dy|
-        npos = to_pos(x + dx, y + dy)
+      DIRS.each do |dpos|
+        npos = pos + dpos
         next if @map[npos] != nheight
         stack << npos
       end
