@@ -10,14 +10,15 @@ file = ARGV[0] || AOC.input_file()
 
 map = File.read(file).rstrip.split("\n")
 
+# This works for negative coordinates, BUT ONLY if they're only ever used as
+# delta values.
+# I.e.
+#   to_pos(3, 4) + to_pos(-2, -3) == to_pos(1, 1)
+# but
+#   from_pos(to_pos(-2, -3)) != [-2, -3]
 Y_BITS = Math.log2(map.length).floor + 1
-Y_MASK = (1 << Y_BITS) - 1
 def to_pos(x, y)
-  return nil if x < 0 or y < 0
-  return x << Y_BITS | y
-end
-def from_pos(pos)
-  return pos >> Y_BITS, pos & Y_MASK
+  return (x << Y_BITS) + y
 end
 
 @field = {}
@@ -28,17 +29,18 @@ map.each_with_index do |line, y|
 end
 
 POS_DIRS = [
-  [ 1,  0],
-  [ 0,  1]
+  to_pos(1, 0),
+  to_pos(0, 1)
 ]
 ALL_DIRS = POS_DIRS + [
-  [-1,  0],
-  [ 0, -1]
+  to_pos(-1,  0),
+  to_pos( 0, -1)
 ]
 
 # BFS/Flood Fill to find areas.
-queue = [to_pos(0, 0)]
-visited = Set[queue.first]
+start = to_pos(0, 0)
+queue = [start]
+visited = Set[start]
 @areas = {}
 @pos2area = {}
 next_area = 0
@@ -48,14 +50,12 @@ until queue.empty?
   plant = @field[pos]
   area = @pos2area[pos]
   if area.nil?
-    area = @pos2area[pos] = next_area
-    next_area += 1
+    area = @pos2area[pos] = (next_area += 1)
     @areas[area] = Set[pos]
   end
 
-  x, y = from_pos(pos)
-  POS_DIRS.each do |dx, dy|
-    npos = to_pos(x+dx, y+dy)
+  POS_DIRS.each do |dpos|
+    npos = pos + dpos
     nplant = @field[npos]
     next if nplant.nil?
     if nplant == plant
@@ -83,11 +83,10 @@ side_cost = 0 # Part 2
   # Find boundaries (perimeters)
   area = plots.count
   boundaries = []
-  ALL_DIRS.each do |dx, dy|
+  ALL_DIRS.each do |dpos|
     dir_boundaries = Set[]
     plots.each do |pos|
-      x, y = from_pos(pos)
-      unless plots.include?(to_pos(x+dx, y+dy))
+      unless plots.include?(pos + dpos)
         dir_boundaries << pos
       end
     end
@@ -99,19 +98,17 @@ side_cost = 0 # Part 2
   perimeter_cost += area * perimeters
 
   # Part 2
-  boundaries.zip(ALL_DIRS) do |list, (ddx, ddy)|
-    # For each boundary, remove any adjacent boundaries next to it.
+  ndirs = ALL_DIRS.length
+  boundaries.each_with_index do |list, i|
+    # For each boundary, remove any adjacent boundaries next to it by walking in
+    # negative and positive directions perpendicular to the boundary direction.
     # This will only leave one boundary per side of fence.
-    [
-      # This makes us walk in negative and positive directions perpendicular to
-      # the boundary direction
-      [-ddy.abs, -ddx.abs],
-      [ ddy.abs,  ddx.abs]
-    ].each do |dx, dy|
-      list.each do |pos|
-        x, y = from_pos(pos)
-        while list.delete?(to_pos(x += dx, y += dy)); end
-      end
+    dpos = ALL_DIRS[(i+1) % ndirs]
+    list.each do |pos|
+      npos = pos
+      while list.delete?(npos += dpos); end
+      npos = pos
+      while list.delete?(npos -= dpos); end
     end
   end
   sides = boundaries.map(&:count).sum
