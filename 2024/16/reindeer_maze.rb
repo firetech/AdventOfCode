@@ -10,21 +10,24 @@ map_lines = File.read(file).rstrip.split("\n")
 MAP_HEIGHT = map_lines.count
 MAP_WIDTH = map_lines.first.length
 
+# This works for negative coordinates, BUT ONLY if they're only ever used as
+# delta values.
+# I.e.
+#   to_pos(3, 4) + to_pos(-2, -3) == to_pos(1, 1)
+# but
+#   from_pos(to_pos(-2, -3)) != [-2, -3]
 X_BITS = Math.log2(MAP_WIDTH - 1).floor + 1
-X_MASK = (1 << X_BITS) - 1
 def to_pos(x, y)
-  return y << X_BITS | x
-end
-def from_pos(pos)
-  return pos & X_MASK, pos >> X_BITS
+  return (y << X_BITS) + x
 end
 
 DIRS = [
-  [ 1,  0],
-  [ 0,  1],
-  [-1,  0],
-  [ 0, -1]
+  to_pos( 1,  0),
+  to_pos( 0,  1),
+  to_pos(-1,  0),
+  to_pos( 0, -1)
 ]
+
 def to_state(pos, dir)
   return pos << 2 | dir
 end
@@ -59,7 +62,7 @@ start = to_state(@start, 0)
 cost = Hash.new(Float::INFINITY)
 cost[start] = 0
 path = {}
-path[start] = Set[@start]
+path[start] = [@start]
 @best_cost = nil
 @best_tiles = nil
 queue = PriorityQueue.new
@@ -72,16 +75,12 @@ until queue.empty?
 
   if pos == @end
     @best_cost = this_cost
-    @best_tiles = this_path
+    @best_tiles = this_path.uniq.length
     break
   end
 
-  x, y = from_pos(pos)
-  dx, dy = DIRS[dir]
-  move_pos = to_pos(x+dx, y+dy)
-
   [
-    [move_pos, dir, this_cost + 1],
+    [pos + DIRS[dir], dir, this_cost + 1],
     [pos, (dir + 1) % 4, this_cost + 1000],
     [pos, (dir - 1) % 4, this_cost + 1000]
   ].each do |npos, ndir, ncost|
@@ -93,7 +92,7 @@ until queue.empty?
       path[nstate] = this_path + [npos]
       queue.push(nstate, ncost)
     elsif ncost == current_cost
-      path[nstate].merge(this_path)
+      path[nstate] += this_path
     end
   end
 end
@@ -102,4 +101,4 @@ end
 puts "Lowest possible score: #{@best_cost}"
 
 # Part 2
-puts "Tiles included in at least one best path: #{@best_tiles.count}"
+puts "Tiles included in at least one best path: #{@best_tiles}"
