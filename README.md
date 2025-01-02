@@ -1,7 +1,36 @@
-Original Solutions
-==================
+Initial Solutions
+=================
 
-Links to the original version of my Advent of Code solutions, for the purposes of local contest audits.
+Links to the initial versions (i.e. the versions used to generate the submitted answers) of my Advent of Code solutions, for the purposes of local contest audits.
+
+2024
+====
+[Day 1](https://github.com/firetech/advent-of-code/commit/f600710cbab1ba1613ab33b556f30815b0421a8c)  
+[Day 2](https://github.com/firetech/advent-of-code/commit/97e086aa3cf192d770b8c0b40dc7529e998cdb19)  
+[Day 3](https://github.com/firetech/advent-of-code/commit/b5117a0d8a184ab8738bdb37239b8b7902e60f81)  
+[Day 4](https://github.com/firetech/advent-of-code/commit/1200c0adf1962239b12196325085edb75b27272c)  
+[Day 5](https://github.com/firetech/advent-of-code/commit/0e584652e4061aa98080b1f51bc82f2807d07021)  
+Day 6 [part 1](https://github.com/firetech/advent-of-code/commit/cb2b6f6cb2689cadd933969e9984ec38500fba43), [part 2](https://github.com/firetech/advent-of-code/commit/422a5c36876e3ac25ab0885e465677dd5a8a2ffe)  
+[Day 7](https://github.com/firetech/advent-of-code/commit/3c1b87e7b7da2c9b95e403e49ed5443efbc87556)  
+[Day 8](https://github.com/firetech/advent-of-code/commit/51859ad9fd7bf6cdcf2ad849fd128d990f22d820)  
+Day 9 [part 1](https://github.com/firetech/advent-of-code/commit/15c207db151ff273a5d8df0366bf77b42d0351ec), [part 2](https://github.com/firetech/advent-of-code/commit/d57ba7de8887f5a73d0fe2c77f8389c963117e5d)  
+[Day 10](https://github.com/firetech/advent-of-code/commit/c9b0084dd8e0dc26c9665b39a982ec391cc5759c)  
+Day 11 [part 1](https://github.com/firetech/advent-of-code/commit/a2e13a3004e9d95dd12cdc2ea4578f9d46c49677), [part2](https://github.com/firetech/advent-of-code/commit/f5fad0b3c8e24ad8b8179b79405fc8a642101164)  
+[Day 12](https://github.com/firetech/advent-of-code/commit/d9b00c61a8c6d5056aa31ffaa65f31ee6cd73cfc)  
+[Day 13](https://github.com/firetech/advent-of-code/commit/f83cedcd2a0856e79f30a94c3f6a8d5285a3d10c)  
+[Day 14](https://github.com/firetech/advent-of-code/commit/f6a4f72338e8f9a94a6b91223b152b4b36934c63)  
+Day 15 [part 1](https://github.com/firetech/advent-of-code/commit/91a331375d8da6a5d6762bfb7ce648aa808cebbb), [part 2](https://github.com/firetech/advent-of-code/commit/c3a0b471d7665ee99763a3e6ab72b834137d87d7)  
+[Day 16](https://github.com/firetech/advent-of-code/commit/56766be1db90ee6d106ab62e1af927322baf125a)  
+[Day 17](https://github.com/firetech/advent-of-code/commit/0ef51d80e5d1df0fda5c36411859351332f8de6d)  
+[Day 18](https://github.com/firetech/advent-of-code/commit/912c4fcb3e8d1b05465450cf3a6f0a8bbc54b99a)  
+[Day 19](https://github.com/firetech/advent-of-code/commit/9ae190a21c05959dfb8319f74ad12d3cc9d86226)  
+[Day 20](https://github.com/firetech/advent-of-code/commit/2de28a1824cd27fc3ee36abace0b3dcae330a853)  
+[Day 21](https://github.com/firetech/advent-of-code/commit/ba82c0716a89e6f97e7bfcd3bf2ea86486e2ee3f)  
+[Day 22](https://github.com/firetech/advent-of-code/commit/f07562572e386050c227d325c84cf2d19235431f)  
+[Day 23](https://github.com/firetech/advent-of-code/commit/07df34673320735ddba7050a80e00658e0dae065)  
+Day 24 [part 1](https://github.com/firetech/advent-of-code/commit/d764aba752a36de0de63db28eb485d04b3730046), [part 2](https://github.com/firetech/advent-of-code/commit/95e67181a59a0c37e4a0ad6d128fdbd3c7d499ce)  
+[Day 25](https://github.com/firetech/advent-of-code/commit/3c91a13f29f52f01ed81b8cc53c5b6e953f25af9)  
+
 
 2022
 ====
