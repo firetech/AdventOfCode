@@ -15,8 +15,10 @@ def from_pos(pos)
   return pos >> Y_BITS, pos & Y_MASK
 end
 
-@list = []
-File.read(file).rstrip.split("\n").each_with_index do |line|
+DIRS = [[0, -1], [0, 1], [-1, 0], [1, 0]]
+
+@list = Hash.new(Float::INFINITY)
+File.read(file).rstrip.split("\n").each_with_index do |line, n|
   valid = false
   case line
   when /\A(\d+),(\d+)\z/
@@ -24,14 +26,14 @@ File.read(file).rstrip.split("\n").each_with_index do |line|
     y = Regexp.last_match(2).to_i
     if x <= @max_coord and y <= @max_coord
       valid = true
-      @list << to_pos(x, y)
+      @list[to_pos(x, y)] = n
+      @list[:"block#{n}"] = [x, y]
     end
   end
   raise "Malformed line: '#{line}'" unless valid
 end
 
 def run(num_blocks)
-  blocks = Set.new(@list.first(num_blocks))
   start = to_pos(0, 0)
   target = to_pos(@max_coord, @max_coord)
   range = 0..@max_coord
@@ -48,13 +50,13 @@ def run(num_blocks)
 
     x, y = from_pos(pos)
     ndist = this_dist + 1
-    [[0, -1], [0, 1], [-1, 0], [1, 0]].each do |dx, dy|
+    DIRS.each do |dx, dy|
       nx = x + dx
       next unless range.include?(nx)
       ny = y + dy
       next unless range.include?(ny)
       npos = to_pos(nx, ny)
-      next if blocks.include?(npos)
+      next if @list[npos] < num_blocks
       next if dist[npos] <= ndist
       dist[npos] = ndist
       queue << npos
@@ -70,5 +72,5 @@ puts "Steps to exit: #{run(@part1_count)}"
 first_block_length = ((@part1_count+1)..@list.length).bsearch do |num_blocks|
   run(num_blocks).nil?
 end
-first_block = @list[first_block_length - 1]
-puts "First byte blocking exit: #{from_pos(first_block).join(',')}"
+first_block = @list[:"block#{first_block_length - 1}"].join(',')
+puts "First byte blocking exit: #{first_block}"
